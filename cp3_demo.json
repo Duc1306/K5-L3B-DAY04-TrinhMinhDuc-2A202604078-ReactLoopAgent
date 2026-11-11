@@ -1,0 +1,207 @@
+{
+  "mode": "offline",
+  "note": "Scripted fake providers; no real LLM calls or judge scores.",
+  "cases": [
+    {
+      "name": "invalid_arguments",
+      "max_steps": 6,
+      "result": {
+        "status": "completed",
+        "answer": "Arguments kh?ng h?p l?; ch?a x?c nh?n ???c tr?ng th?i.",
+        "trace": [
+          {
+            "event": "model",
+            "step": 1,
+            "finish": "tool_calls"
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_status",
+            "tool_call_id": "bad-json",
+            "raw_arguments": "{",
+            "arguments": "{",
+            "result": {
+              "ok": false,
+              "error": "INVALID_ARGUMENTS",
+              "message": "Arguments phải là JSON object hợp lệ."
+            }
+          },
+          {
+            "event": "model",
+            "step": 2,
+            "finish": "stop"
+          }
+        ],
+        "usage": [
+          {},
+          {}
+        ]
+      }
+    },
+    {
+      "name": "tool_timeout",
+      "max_steps": 6,
+      "result": {
+        "status": "completed",
+        "answer": "Kh?ng l?y ???c d? li?u do timeout; ch?a th? k?t lu?n d?ch v? c? s? c?.",
+        "trace": [
+          {
+            "event": "model",
+            "step": 1,
+            "finish": "tool_calls"
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_status",
+            "tool_call_id": "timeout-call",
+            "raw_arguments": "{\"provider\":\"github\"}",
+            "arguments": {
+              "provider": "github"
+            },
+            "result": {
+              "ok": false,
+              "error": "TimeoutError",
+              "message": "Không thể lấy dữ liệu status (timeout giả lập)."
+            }
+          },
+          {
+            "event": "model",
+            "step": 2,
+            "finish": "stop"
+          }
+        ],
+        "usage": [
+          {},
+          {}
+        ]
+      }
+    },
+    {
+      "name": "provider_error",
+      "max_steps": 6,
+      "result": {
+        "status": "error",
+        "answer": "",
+        "trace": [
+          {
+            "event": "provider_error",
+            "step": 1,
+            "error": "TimeoutError: LLM provider timeout (offline simulation)."
+          }
+        ],
+        "usage": [],
+        "error": "TimeoutError: LLM provider timeout (offline simulation)."
+      }
+    },
+    {
+      "name": "truncated_output",
+      "max_steps": 6,
+      "result": {
+        "status": "error",
+        "answer": "",
+        "trace": [
+          {
+            "event": "model",
+            "step": 1,
+            "finish": "length"
+          },
+          {
+            "event": "model_error",
+            "step": 1,
+            "finish": "length",
+            "error": "Model dừng khi chưa hoàn tất: finish='length'."
+          }
+        ],
+        "usage": [
+          {}
+        ],
+        "error": "Model dừng khi chưa hoàn tất: finish='length'."
+      }
+    },
+    {
+      "name": "max_steps",
+      "max_steps": 1,
+      "result": {
+        "status": "max_steps",
+        "answer": "",
+        "trace": [
+          {
+            "event": "model",
+            "step": 1,
+            "finish": "tool_calls"
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_status",
+            "tool_call_id": "budget-call",
+            "raw_arguments": "{\"provider\":\"github\",\"component\":\"Actions\"}",
+            "arguments": {
+              "provider": "github",
+              "component": "Actions"
+            },
+            "result": {
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "overall": {
+                "indicator": "none",
+                "description": "All Systems Operational"
+              },
+              "components": [
+                {
+                  "name": "Actions",
+                  "status": "operational"
+                }
+              ],
+              "incidents": [
+                {
+                  "id": "pfbmpxxfq1cy",
+                  "name": "Degraded performance for multiple GitHub services",
+                  "status": "resolved",
+                  "updated_at": "2026-11-06T00:20:49.369Z"
+                },
+                {
+                  "id": "t89g2q1800fr",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-05T17:42:35.455Z"
+                },
+                {
+                  "id": "h02n9572mx9y",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-07T01:10:18.506Z"
+                },
+                {
+                  "id": "xr3myzj7ms51",
+                  "name": "Incident with Actions and Pages",
+                  "status": "resolved",
+                  "updated_at": "2026-11-07T01:04:38.647Z"
+                },
+                {
+                  "id": "smtdswd1h2w4",
+                  "name": "Incident with Pull Requests, Git Operations and Issues",
+                  "status": "resolved",
+                  "updated_at": "2026-11-04T11:50:06.459Z"
+                }
+              ],
+              "matching_incidents_in_last_50": 23,
+              "note": "Chỉ tìm theo chuỗi trong 50 incident gần nhất; không tìm thấy không chứng minh không có sự cố.",
+              "source": "https://www.githubstatus.com"
+            }
+          },
+          {
+            "event": "max_steps",
+            "step": 1,
+            "max_steps": 1
+          }
+        ],
+        "usage": [
+          {}
+        ]
+      }
+    }
+  ]
+}

@@ -21,7 +21,7 @@ def run_agent(question, provider, tools, max_steps=6):
     for step in range(1, max_steps + 1):
         try:
             response = provider.complete(messages, SCHEMAS)
-        except (RuntimeError, ValueError, OSError) as exc:
+        except Exception as exc:
             result['status'] = 'error'
             result['error'] = f'{type(exc).__name__}: {str(exc)[:200]}'
             result['trace'].append({
@@ -43,6 +43,10 @@ def run_agent(question, provider, tools, max_steps=6):
         if finish not in ('stop', 'tool_calls') or not calls:
             result['status'] = 'error'
             result['error'] = f'Model dừng khi chưa hoàn tất: finish={finish!r}.'
+            result['trace'].append({
+                'event': 'model_error', 'step': step, 'finish': finish,
+                'error': result['error'],
+            })
             return result
 
         # Return every tool result before asking the model for another turn.
@@ -58,10 +62,18 @@ def run_agent(question, provider, tools, max_steps=6):
                     'message': 'Arguments phải là JSON object hợp lệ.',
                 }
             else:
-                observation = tools.execute(call['name'], arguments)
+                try:
+                    observation = tools.execute(call['name'], arguments)
+                except Exception as exc:
+                    # A failed tool is still an observation for this call ID.
+                    observation = {
+                        'ok': False, 'error': type(exc).__name__,
+                        'message': str(exc)[:200],
+                    }
 
             result['trace'].append({
                 'event': 'tool', 'step': step, 'name': call['name'],
+                'tool_call_id': call['id'], 'raw_arguments': call['arguments'],
                 'arguments': arguments, 'result': observation,
             })
             messages.append({
@@ -69,4 +81,7 @@ def run_agent(question, provider, tools, max_steps=6):
                 'content': json.dumps(observation, ensure_ascii=False),
             })
 
+    result['trace'].append({
+        'event': 'max_steps', 'step': max_steps, 'max_steps': max_steps,
+    })
     return result
