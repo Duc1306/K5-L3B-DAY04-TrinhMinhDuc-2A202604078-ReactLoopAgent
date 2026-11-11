@@ -17,6 +17,7 @@ def run_agent(question, provider, tools, max_steps=6):
         {'role': 'user', 'content': question},
     ]
     result = {'status': 'max_steps', 'answer': '', 'trace': [], 'usage': []}
+    incident_urls = set()
 
     for step in range(1, max_steps + 1):
         try:
@@ -36,8 +37,26 @@ def run_agent(question, provider, tools, max_steps=6):
         result['trace'].append({'event': 'model', 'step': step, 'finish': finish})
 
         if finish == 'stop' and not calls:
+            answer = response['message'].get('content') or ''
+            if incident_urls and not any(url in answer for url in incident_urls):
+                observed_urls = sorted(incident_urls)
+                result['trace'].append({
+                    'event': 'validation_missing_source', 'step': step,
+                    'observed_urls': observed_urls, 'answer': answer,
+                })
+                messages.append({
+                    'role': 'user',
+                    'content': (
+                        'Câu trả lời vừa rồi chưa dẫn URL incident đã quan sát từ '
+                        'get_incident_details thành công. Hãy sửa câu trả lời, giữ đúng '
+                        'phạm vi bằng chứng và dẫn ít nhất một URL trong danh sách dữ '
+                        'liệu sau. Sao chép nguyên vẹn URL, không tự tạo liên kết: '
+                        + json.dumps(observed_urls, ensure_ascii=False)
+                    ),
+                })
+                continue
             result['status'] = 'completed'
-            result['answer'] = response['message'].get('content') or ''
+            result['answer'] = answer
             return result
 
         if finish not in ('stop', 'tool_calls') or not calls:
@@ -70,6 +89,11 @@ def run_agent(question, provider, tools, max_steps=6):
                         'ok': False, 'error': type(exc).__name__,
                         'message': str(exc)[:200],
                     }
+
+            if call['name'] == 'get_incident_details' and observation.get('ok'):
+                url = observation.get('url')
+                if isinstance(url, str) and url:
+                    incident_urls.add(url)
 
             result['trace'].append({
                 'event': 'tool', 'step': step, 'name': call['name'],
