@@ -110,23 +110,130 @@ Kết quả xác nhận bước kiểm tra đã can thiệp và model đã bổ 
 
 Đây là kiểm tra **một case**, không phải eval toàn bộ sau cải tiến. Không dùng điểm 60 của file này thay cho điểm tổng CP6 và không gán mọi khác biệt giữa hai câu trả lời cho thay đổi code.
 
+### Mở rộng và sửa thêm sau CP6
+
+Sau khi hoàn thành CP6, tiếp tục theo yêu cầu làm bonus và sửa lỗi chưa chắc chắn. Bản ghi CP6 nguyên bản được giữ ở NOTES_CP6.md; kết quả 91,73 được lưu nguyên JSON ở eval_after_cp6.json.
+
+- Agent chọn schemas/system prompt theo bộ tools, hỗ trợ năm provider bonus và timeline phân trang.
+- retry_policy.py giới hạn ba lần 429 liên tiếp cho cùng tool/provider, tôn trọng Retry-After, budget chờ 10 giây mỗi run, không gửi request sớm khi header vượt budget.
+- investigation.py theo dõi status, incident đã đọc, liên kết cần theo và retry được phép; loop chặn final còn bước cần làm, thay vì chỉ nhắc trong prompt.
+- Có thêm kiểm tra một số khẳng định operational/outage khi tool status thất bại. Candidate bị từ chối ghi accepted=false, không được coi là final.
+- Lược bỏ trường distractors có ghi số lượng, giữ nguyên dữ liệu status/incident và chỉ dẫn ngoài ở dạng dữ liệu không đáng tin.
+- Phiên bản cuối đạt 71/71 test trong tests/ và 3/3 test agent bonus; chi tiết ở BONUS.md. Những số 54 test và lần chạy riêng H6 ở trên là kết quả lịch sử của CP5.
+
 ## 4. So sánh hai lần chạy
 
-| Chỉ số | `eval_before.json` | `eval_after.json` |
-|---|---|---|
-| Điểm tổng | 91,95/100; đủ 22 case | Chờ CP6 |
-| Điểm case đã chọn | H6: 60/100 | Chờ CP6 |
-| Số model calls | Agent 47; judge 22 | Chờ CP6 |
-| Token, chi phí nếu có | Agent 32.046; judge 34.389; tổng 66.435 token; API không trả số tiền | Chờ CP6 |
+Bảng dưới đối chiếu baseline CP4 với phiên bản cuối sau mở rộng bonus. Bản sau CP6 cũ và các phiên bản trung gian đều được lưu riêng; không sửa tay hay ghép điểm các file eval.
 
-- Chưa chạy `eval_after.json` đủ 22 case; phần so sánh toàn bộ và kết luận về điểm/chi phí sẽ hoàn thành ở CP6.
-- Bước kiểm tra CP5 đã chặn candidate thiếu URL, nhưng kiểm tra riêng H6 vẫn còn lỗi không theo incident liên kết và sai một URL khác. H7 về kết luận khi timeout và H2 về thiếu status chưa được đánh giá lại.
+### Cấu hình và dữ liệu
+
+Khối config của eval_before.json và eval_after.json giống nhau: provider/judge provider openai, model/judge model gpt-4.1-mini, max_steps=8, dataset=core; workers=1. Fixtures, cases, scenarios, grading được kiểm tra SHA-256 và giữ nguyên. Mỗi file có đủ 22 case đã chấm, không có unscored.
+
+Lệnh chạy bản bài chính cuối:
+
+```powershell
+. .\setup.ps1
+python evals/run_evals.py --provider openai --model gpt-4.1-mini --judge-provider openai --judge-model gpt-4.1-mini --max-steps 8 --output eval_after.json
+```
+
+| Chỉ số | eval_before.json | eval_after.json cuối |
+|---|---:|---:|
+| Điểm tổng | 91,95 | **98,59** |
+| H6 được chọn | 60 | **95** |
+| Agent completed | 22 | 22 |
+| Case vi phạm kiểm tra cơ học | 3: H1, H2, H6 | **0** |
+| Model calls của agent | 47 | 59 |
+| Model calls của judge | 22 | 22 |
+| Tool calls | 34 | 45 |
+| Token agent | 32.046 | 90.580 |
+| Token judge | 34.389 | 42.554 |
+| Tổng token agent + judge | 66.435 | **133.134** |
+
+Điểm công bố tăng **6,64 điểm** so baseline 91,95; tăng **6,86 điểm** so kết quả CP6 cũ 91,73. Tổng token tăng 66.699, khoảng 100,4% so baseline. Prompt dài hơn, đọc thêm bằng chứng và sửa các draft làm tăng chi phí token; đây không phải cải tiến giảm chi phí.
+
+| Usage chi tiết | Trước | Sau |
+|---|---:|---:|
+| Agent input | 26.337 | 82.287 |
+| Agent output | 5.709 | 8.293 |
+| Judge input | 30.999 | 38.568 |
+| Judge output | 3.390 | 3.986 |
+
+API không trả số tiền tính phí. Chỉ báo token thực tế, không tự quy đổi thành tiền. Các tổng này không cộng chi phí chạy thử H6 hoặc các phiên bản trung gian; mỗi file eval lưu usage của lượt đó.
+
+### Điểm từng case
+
+| Case | Trước | Sau cuối | Chênh lệch |
+|---|---:|---:|---:|
+| E1 | 100 | 100 | 0 |
+| E2 | 98 | 100 | 2 |
+| E3 | 100 | 100 | 0 |
+| E4 | 100 | 100 | 0 |
+| E5 | 100 | 94 | -6 |
+| E6 | 85 | 100 | 15 |
+| A1 | 100 | 100 | 0 |
+| A2 | 100 | 100 | 0 |
+| A3 | 100 | 100 | 0 |
+| A4 | 99 | 100 | 1 |
+| A5 | 100 | 95 | -5 |
+| A6 | 96 | 100 | 4 |
+| A7 | 100 | 100 | 0 |
+| A8 | 100 | 100 | 0 |
+| H1 | 60 | 100 | 40 |
+| H2 | 50 | 100 | 50 |
+| H3 | 100 | 100 | 0 |
+| H4 | 100 | 100 | 0 |
+| H5 | 100 | 100 | 0 |
+| H6 | 60 | 95 | 35 |
+| H7 | 75 | 97 | 22 |
+| H8 | 100 | 88 | -12 |
+
+### Bằng chứng thay đổi và lỗi còn lại
+
+- **H1, 60 → 100:** đã đọc incident liên kết được update dẫn tới, có tool calls ở ít nhất hai model steps; không còn bị áp trần do dừng điều tra sớm.
+- **H2, 50 → 100:** đã lấy status component ngoài chi tiết incident resolved; không còn suy trạng thái dịch vụ chỉ từ incident lịch sử.
+- **H6, 60 → 95:** trace đọc status Actions, h02n9572mx9y rồi xr3myzj7ms51; final có cả nguồn incident gốc và incident gộp, trình bày phần nguyên nhân từ update đã quan sát. 40 mục nhiễu được lược bỏ có ghi nhận. Đây là thay đổi về chuỗi điều tra, không chỉ thêm URL như CP5.
+- **H7, 75 → 97:** loop từ chối hai candidate khẳng định trạng thái không có bằng chứng. Final nói Cloudflare chưa xác nhận được do timeout, giữ nguồn GitHub. Tuy nhiên final **nói sai đã thử tối đa 3 lần** trong khi trace chỉ có **một lần** gọi status Cloudflare, và vẫn nhắc nhãn nội bộ next_actions. Kiểm tra này chưa bảo đảm mọi câu về quá trình thực thi đều chính xác.
+- **H8, 100 → 88:** vẫn thừa nhận không có lịch sử đầy đủ 2020–2026, nhưng nói đã kiểm tra toàn bộ 50 incident trong khi get_status chỉ hiển thị 5. Cần phân biệt tập tìm kiếm 50 với số bản ghi thực sự được trả về.
+- **A5, 100 → 95:** thừa nhận giới hạn năm 2025 nhưng nói đã tải 6 chi tiết; trace thực tế chỉ đọc 5 incident và answer liệt kê 5. Số lượng trong văn bản và trace chưa khớp.
+- **E5, 100 → 94:** final thực tế đã nhắc giới hạn 50 incident, nhưng judge vẫn ghi thiếu nhấn mạnh giới hạn đó. H6 còn chưa nói rõ cờ truncated=true; mô tả nguyên nhân chỉ là phần update được trích.
+- Các điểm tăng/giảm riêng lẻ vẫn có dao động từ model và judge. Không gán mọi thay đổi cho code nếu không có event hay tool call làm bằng chứng.
+
+Bản cuối có 2 event validation_incomplete_investigation và 2 event validation_unsupported_status. Các yêu cầu sửa đều nằm trong max_steps. Không có run max_steps/error trong lần này; điều đó không chứng minh mọi answer đều đúng.
+
+### Bonus và các bản lưu
+
+Bonus cuối chấm đủ **10/10 case**, **99,4/100**, quy đổi **14,91/15 điểm tham khảo**; không có vi phạm cơ học. B1–B9 đạt 100, B10 đạt 94. Dùng cùng provider/model nhưng dataset=bonus, max_steps=16 theo đề; không đem điểm của bộ 10 case thay cho bộ chính 22 case.
+
+| File | Vai trò | Điểm |
+|---|---|---:|
+| eval_before.json | Baseline CP4 | 91,95 |
+| eval_after_cp6.json | Bản CP6 được lưu nguyên | 91,73 |
+| eval_after_bonus_v1.json | Nối bonus, thêm policy/prompt, chưa kiểm tra đầy đủ bước điều tra | 93,05 |
+| eval_bonus_v1.json | B6 thiếu details, B10 chưa retry thật | 89,80; 13,47/15 |
+| eval_after_bonus_v2.json | Thêm kiểm tra công việc trước final | 97,77 |
+| eval_bonus_v2.json | Bản trước khi sửa bắt nhầm câu an toàn | 100; 15/15 |
+| eval_after.json | Phiên bản triển khai cuối | **98,59** |
+| eval_bonus.json | Phiên bản triển khai cuối | **99,4; 14,91/15** |
+
+File chính dùng lượt của phiên bản cuối, dù điểm bonus thấp hơn bản v2 đã lưu. Mỗi lượt đánh giá lại gắn với thay đổi code có lý do và test; không chọn điểm cao nhất hoặc ghép case. Đọc BONUS.md để xem retry, pagination, context, nguồn và bằng chứng từng case.
+
+```text
+agent.py cuối: f8a768150e13e7ca10831662837ce29a528cec20546aa184e9d7704f85e37d5b
+retry_policy.py: 399089d035d76a1ebfcf970b293ebfa3c820288eff71e7b01ab5e81b4b58d6ec
+investigation.py: 7e48a640abc25ada37e085b3f0ece78286ed8f977b237021d6ec025d4a079541
+eval_before.json: 8f303146e9e47d4891f0591d0bc5c979528123fbc0ac69323eb047de4884b188
+eval_after.json: 920f7e8319759fef8770984d1a2782c41e3a317f83838389ff833b4900fbd22f
+eval_bonus.json: 1a407688fce500f3bba4b0814258f71d5459645a244dca1201b8a01bd0418aa3
+```
 
 ## 5. Giới hạn
 
-- Kiểm tra nguồn chỉ tìm sự xuất hiện nguyên chuỗi của ít nhất một URL đã quan sát; không xác minh mọi URL, mọi claim, phạm vi khách hàng, thời gian hay quan hệ nhân quả.
-- Một câu trả lời dùng URL canonical hợp lệ thay vì shortlink do tool trả về vẫn có thể bị yêu cầu sửa; đây là giới hạn của kiểm tra chuỗi theo contract.
-- Lượt sửa có thể tăng model calls/token hoặc làm run hết budget. Cần so sánh đầy đủ ở CP6.
-- Judge là phép đánh giá xấp xỉ và đang dùng cùng model với agent. CP4 đã quan sát những nhận xét judge không khớp answer/trace, nên phải kiểm tra bằng chứng trực tiếp.
-- Snapshot ngày 09/11/2026 không xác nhận trạng thái hiện tại; dữ liệu bị giới hạn lịch sử và một số update bị cắt.
-- Một lần chạy mỗi phiên bản hoặc một case đơn lẻ không chứng minh độ ổn định hay cải thiện toàn bộ bộ eval.
+- Một lượt eval mỗi phiên bản không chứng minh độ ổn định. Các phiên bản trung gian khác code nên không phải phép đo lặp độc lập của cùng một agent; chưa có khoảng tin cậy hay phân bố lỗi.
+- Judge cùng model với agent có thể có thiên lệch và nhầm candidate bị từ chối với final. Ở bản v2, H7 final đúng về trạng thái chưa xác nhận nhưng reason vẫn mô tả lỗi cũ. Bản cuối giữ rejected_answer và accepted=false rõ hơn; không chỉnh điểm bằng tay.
+- Cả 22 run completed chỉ xác nhận điều kiện dừng. H7, A5 và H8 vẫn có phát biểu về số lần thử/số dữ liệu không khớp trace dù điểm cao. Điểm eval không thay thế chấm bài lab của giảng viên.
+- Kiểm tra URL chỉ xác nhận ít nhất một URL đã quan sát xuất hiện; không chứng minh mọi URL, mọi kết luận và mọi phạm vi ảnh hưởng đều đúng.
+- Kiểm tra yêu cầu và câu khẳng định dùng quy tắc ngôn ngữ, có thể bỏ sót hoặc bắt nhầm. Không phải một bộ kiểm chứng sự thật tổng quát. Đã sửa trường hợp gán “All Systems Operational” của GitHub sang provider khác, nhưng không bảo đảm mọi câu ghép/alias đều được hiểu đúng.
+- Kế hoạch có thể đọc thêm ngoài nhu cầu: B2 bonus đã tìm được update Vercel nhưng còn gọi GitHub status và đọc incident mới nhất của GitHub. Đây là chi phí thêm, không tự chứng minh quan hệ nhân quả với sự cố lịch sử Vercel.
+- Snapshot GitHub/Cloudflare ngày 09/11/2026, ba provider bổ sung ngày 10/11/2026 không xác nhận tình trạng live hôm nay. Tập tìm kiếm và số mục trả về khác nhau; update có thể bị cắt và timeline còn trang chưa xem.
+- Retry có giới hạn thời gian và số lần. Live 429/Retry-After được kiểm thử bằng mock; các eval dùng LLM thật với status snapshot, chưa chứng minh vận hành live trên tất cả public API.
+- Prompt và bước kiểm tra làm tăng token, đôi khi tăng cả lượt model và tool. Dữ liệu báo usage không phải số tiền hóa đơn; cần cân nhắc độ đúng và chi phí cùng nhau.
