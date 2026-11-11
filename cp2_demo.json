@@ -1,0 +1,106 @@
+{
+  "status": "completed",
+  "answer": "Hiện tại, GitHub Actions đang hoạt động bình thường và không có sự cố nào đang diễn ra. Có một số sự cố liên quan đến Actions đã được ghi nhận và đã được giải quyết gần đây, ví dụ như sự cố được cập nhật lần cuối vào các ngày 5, 6, và 7 tháng 11 năm 2026, nhưng tất cả đều đã được giải quyết.\n\nNguồn thông tin: https://www.githubstatus.com",
+  "trace": [
+    {
+      "event": "model",
+      "step": 1,
+      "finish": "tool_calls"
+    },
+    {
+      "event": "tool",
+      "step": 1,
+      "name": "get_status",
+      "arguments": {
+        "provider": "github",
+        "component": "Actions"
+      },
+      "result": {
+        "provider": "github",
+        "captured_at": "2026-11-09T03:50:47.065020+00:00",
+        "overall": {
+          "indicator": "none",
+          "description": "All Systems Operational"
+        },
+        "components": [
+          {
+            "name": "Actions",
+            "status": "operational"
+          }
+        ],
+        "incidents": [
+          {
+            "id": "pfbmpxxfq1cy",
+            "name": "Degraded performance for multiple GitHub services",
+            "status": "resolved",
+            "updated_at": "2026-11-06T00:20:49.369Z"
+          },
+          {
+            "id": "t89g2q1800fr",
+            "name": "Incident with Actions",
+            "status": "resolved",
+            "updated_at": "2026-11-05T17:42:35.455Z"
+          },
+          {
+            "id": "h02n9572mx9y",
+            "name": "Incident with Actions",
+            "status": "resolved",
+            "updated_at": "2026-11-07T01:10:18.506Z"
+          },
+          {
+            "id": "xr3myzj7ms51",
+            "name": "Incident with Actions and Pages",
+            "status": "resolved",
+            "updated_at": "2026-11-07T01:04:38.647Z"
+          },
+          {
+            "id": "smtdswd1h2w4",
+            "name": "Incident with Pull Requests, Git Operations and Issues",
+            "status": "resolved",
+            "updated_at": "2026-11-04T11:50:06.459Z"
+          }
+        ],
+        "matching_incidents_in_last_50": 23,
+        "note": "Chỉ tìm theo chuỗi trong 50 incident gần nhất; không tìm thấy không chứng minh không có sự cố.",
+        "source": "https://www.githubstatus.com"
+      }
+    },
+    {
+      "event": "model",
+      "step": 2,
+      "finish": "stop"
+    }
+  ],
+  "usage": [
+    {
+      "prompt_tokens": 256,
+      "completion_tokens": 18,
+      "total_tokens": 274,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    {
+      "prompt_tokens": 655,
+      "completion_tokens": 94,
+      "total_tokens": 749,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    }
+  ]
+}
